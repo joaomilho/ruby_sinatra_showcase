@@ -3,42 +3,77 @@ require 'sinatra'
 require 'active_support/json'
 require 'net/http'
 require 'yaml'
+require 'haml'
+
+enable :sessions
 
 configure do
   opts = YAML.load_file( File.expand_path('../settings.yml', __FILE__))
   opts.each do |key, value|
     set key.to_sym, value
   end
-  # setting one option
-  # set :my_option, 'value'
+  set :views, 'views'
+  # set(:css_dir) { File.join(views, 'css') }
+end
+
+helpers do
+  def logged_in?
+    @access_token
+  end
+  # get the current user information. Should also be persisted in session
+  def current_user
+    if logged_in?
+      usr_url = "#{settings.fidor_api_url}/users/current?access_token=#{session['access_token']}"
+      @user = ActiveSupport::JSON.decode( Net::HTTP.get URI(usr_url) )
+    end
+  end
+end
+
+before do
+  @access_token = session['access_token']
 end
 
 get '/' do
+  haml :index
+end
 
-  # 1. redirect to authorize url
+get '/transactions' do
+
+end
+
+get '/logout' do
+  session.destroy
+  redirect '/'
+end
+
+# 1. Redirect the user to the fidor login
+get '/login' do
+  # oAuth state param should be unique per user/request, in here only for the showcase
+  state_param = 'keo83j4jdu35kd245'
+  dialog_url = "#{settings.fidor_oauth_url}/authorize?client_id=#{settings.client_id}&redirect_uri=#{CGI::escape(settings.oauth_callback_url)}&state=#{state_param}&response_type=code"
+  redirect dialog_url
+end
+
+# 2. get the access token, with code returned from auth dialog above
+get '/oauth_callback' do
   unless code = params["code"]
-    dialog_url = "#{settings.fidor_oauth_url}/authorize?client_id=#{settings.client_id}&redirect_uri=#{CGI::escape(settings.app_url)}&state=1234&response_type=code"
-    redirect dialog_url
+    raise "Redirect from fidor does not have the code param"
   end
-
-  # 2. get the access token, with code returned from auth dialog above
+  state_param = params["state"]
   token_url = URI("#{settings.fidor_oauth_url}/token")
   # GET and parse access_token response json
-  res = Net::HTTP.post_form(token_url, 'client_id' => settings.client_id,
-                                       'redirect_uri' => CGI::escape(settings.app_url),
-                                       'code' =>code,
-                                       'client_secret'=>settings.client_secret,
-                                       'grant_type'=>'authorization_code')
-
-  resp = ActiveSupport::JSON.decode(res.body)
-
-  # GET current user
-  usr_url = "#{settings.fidor_api_url}/users/current?access_token=#{resp['access_token']}"
-  user = ActiveSupport::JSON.decode( Net::HTTP.get URI(usr_url) )
-  account_url = "#{settings.fidor_api_url}/accounts?access_token=#{resp['access_token']}"
-  "<h2>Hello #{user['email']}</h2>
-   <i>May i present the access token response:</i>
-   <blockquote>#{resp.inspect}</blockquote>
-   <p>Now use the access token in <br> <a href='#{account_url}'>#{account_url}</a></p>
-   "
+  request = Net::HTTP.post_form(token_url, client_id: settings.client_id,
+                                       redirect_uri: CGI::escape(settings.oauth_callback_url),
+                                       code: code,
+                                       client_secret: settings.client_secret,
+                                       grant_type: 'authorization_code')
+  response = ActiveSupport::JSON.decode(request.body)
+  # puts response.inspect
+  if response['state'] != state_param
+    raise "State param does not match request may be tempered"
+  else
+    session[:access_token] = response['access_token']
+    session[:expires] = Time.now + response['expires_in']
+  end
+  redirect '/'
 end

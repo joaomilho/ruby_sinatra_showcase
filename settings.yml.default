@@ -1,7 +1,7 @@
 # Copy this file to settings.yml and add your configs
 
 # default for local installs: http://localhost:4567
-app_url: 'http://localhost:4567'
+oauth_callback_url: 'http://localhost:4567/oauth_callback'
 # client id / secret as show on the fidor application site
 client_id: 'yxz1234'
 client_secret: '123abc456'
