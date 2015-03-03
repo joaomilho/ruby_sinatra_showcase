@@ -1,0 +1,14 @@
+# Ignore all logfiles and tempfiles.
+*.log
+/tmp
+database.yml
+settings.yml
+secrets.yml
+/coverage/*
+.ruby-gemset
+.phrase
+/pkg
+.DS_Store
+.generators
+.idea
+*.swp

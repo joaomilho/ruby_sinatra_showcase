@@ -1,0 +1,18 @@
+# Copy this file to settings.yml and add your configs
+
+# default for local installs: http://localhost:4567
+app_url: 'http://localhost:4567'
+# client id / secret as show on the fidor application site
+client_id: 'yxz1234'
+client_secret: '123abc456'
+# the url of the oAuth endpoint. Needs to be changed when the app switches to a
+# live account.
+# Sandbox URL: 'https://aps.fidor.de/oauth'
+# Live URL: 'https://apm.fidor.de/oauth'
+fidor_oauth_url: 'https://aps.fidor.de/oauth'
+
+# the url of the oAuth endpoint. Needs to be changed when the app switches to a
+# live account.
+# Sandbox URL: 'https://aps.fidor.de'
+# Live URL: 'https://api.fidor.de'
+fidor_api_url: 'https://aps.fidor.de'
