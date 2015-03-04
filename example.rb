@@ -41,7 +41,14 @@ get '/' do
 end
 
 get '/transactions' do
-
+  txn_url = "#{settings.fidor_api_url}/transactions?access_token=#{session['access_token']}"
+  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(txn_url))
+  if res.is_a?(Hash) && res['error']
+    @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
+  else
+    @transactions = res
+  end
+  erb :transactions
 end
 
 get '/transfers' do

@@ -1,0 +1,30 @@
+<% if @error %>
+  <p class="alert alert-danger">
+    <%= @error%>
+  </p>
+<% else %>
+  <table class="table">
+    <thead>
+      <th>TX ID</th>
+      <th>Subject</th>
+      <th>Type</th>
+      <th>Booking Date</th>
+      <th>Amount</th>
+    </thead>
+    <tbody>
+      <% @transactions.each do |txn| %>
+      <tr>
+        <td><%=txn['id'] %></td>
+        <td><%=txn['subject'] %></td>
+        <td>
+          <%=txn['transaction_type'] %>
+          <% #=[txn['remote_holder'] txn['remote_iban']].join(' / ') %>
+        </td>
+        <td><%=txn['booking_date'] %></td>
+        <td><%=txn['amount']/100.0 %> €</td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+
+<% end%>
