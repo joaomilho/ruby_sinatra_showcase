@@ -5,11 +5,14 @@ sinatra micro-framework.
 
 See the git commit log for the steps. The code will improve and some odd looking
 parts are there to show common problems(and solutions to them) in API-Client
-Software.
+Software. We did not use a bunch of magic helper libraries from the very start,
+to show the road you will have to go. The decision whether to use external libs
+or building own ones is up to you. We'll leave lots of room for improvements in
+here.
 
-We used ruby for its readability. Non-Ruby developers are also welcome to read
-because the problems we face(API-client wise) are common, no matter matter what
-framework or language you are using.
+Non-Ruby developers are also welcome to read because the problems we face
+(API-client wise) are common, no matter matter what framework or language you
+are using. Ruby is really readable, so give it a try.
 
 ## Dependencies
 
