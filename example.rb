@@ -1,10 +1,11 @@
 require 'rubygems'
 require 'sinatra'
 require 'sinatra/reloader'
-require 'active_support/json'
+require 'json'
 require 'net/http'
 require 'yaml'
 require 'erb'
+require 'httparty'
 
 enable :sessions
 
@@ -27,7 +28,7 @@ helpers do
   def current_user
     if logged_in?
       usr_url = "#{settings.fidor_api_url}/users/current?access_token=#{session['access_token']}"
-      @user = ActiveSupport::JSON.decode( Net::HTTP.get URI(usr_url) )
+      @user = JSON.parse( Net::HTTP.get URI(usr_url) )
     end
   end
 end
@@ -42,7 +43,7 @@ end
 
 get '/transactions' do
   url = "#{settings.fidor_api_url}/transactions?access_token=#{session['access_token']}"
-  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(url))
+  res = JSON.parse( Net::HTTP.get URI(url))
   if res.is_a?(Hash) && res['error']
     @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
   else
@@ -53,7 +54,7 @@ end
 
 get '/sepa_credit_transfers' do
   url = "#{settings.fidor_api_url}/sepa_credit_transfers?access_token=#{session['access_token']}"
-  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(url))
+  res = JSON.parse( Net::HTTP.get URI(url))
   if res.is_a?(Hash) && res['error']
     @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
   else
@@ -64,7 +65,7 @@ end
 
 get '/internal_transfers' do
   url = "#{settings.fidor_api_url}/internal_transfers?access_token=#{session['access_token']}"
-  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(url))
+  res = JSON.parse( Net::HTTP.get URI(url))
   if res.is_a?(Hash) && res['error']
     @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
   else
@@ -72,6 +73,65 @@ get '/internal_transfers' do
   end
   erb :internal_transfers
 end
+
+# show form
+get '/sepa_credit_transfers/new' do
+  erb :sepa_credit_transfers_new
+end
+
+post '/sepa_credit_transfers' do
+
+  # find and use the first account. Could be done in GET new and added to a select-box
+  begin
+    accounts_url = "#{settings.fidor_api_url}/accounts?access_token=#{session['access_token']}"
+    res = JSON.parse( Net::HTTP.get URI(accounts_url))
+    account_id = res[0]['id']
+  rescue
+    @error = "Account could not be found. Try logging in again."
+  end
+  # check account locked, balance_available, overdraft against the given amount
+  # validate the data
+  unless @error
+    @transfer = params['transfer']
+    @transfer['account_id'] = account_id
+    # generate custom external_uid
+    @transfer['external_uid'] = SecureRandom.hex(10)
+    # replace commas and clean everything but numbers/dots and convert the amount to cents
+    @transfer['amount'] = (@transfer['plain_amount'].gsub(/,/, '.').gsub(/[^0-9,.]/, '').to_f * 100.0).to_i
+    # use HTTParty gem since ruby stdlib really sucks
+    response = HTTParty.post("#{settings.fidor_api_url}/sepa_credit_transfers",
+                      body: {sepa_credit_transfer: @transfer}.to_json,
+                      query: { access_token:session['access_token'] },
+                      headers: { 'Content-Type' => 'application/json'})
+
+    # check for success & handle errors
+    if response.code != 200
+      res = JSON.parse( response.body )
+      if res.is_a?(Hash) && res['error']
+        @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
+      else
+        @error = "Unexpected error with response code #{response.code}"
+      end
+    end
+  end
+
+  if @error
+    erb :sepa_credit_transfers_new
+  else
+    # return to list if success
+    redirect '/sepa_credit_transfers'
+  end
+
+end
+
+get '/internal_transfers/new' do
+  # show form
+end
+
+post '/internal_transfers' do
+
+end
+
 
 get '/logout' do
   session.destroy
@@ -98,7 +158,7 @@ get '/oauth_callback' do
                                        code: params["code"],
                                        client_secret: settings.client_secret,
                                        grant_type: 'authorization_code')
-  response = ActiveSupport::JSON.decode(request.body)
+  response = JSON.parse(request.body)
   # puts response.inspect
   if response['state'] != params["state"]
     raise "State param does not match request may be tempered"
