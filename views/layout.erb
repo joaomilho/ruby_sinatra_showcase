@@ -52,6 +52,7 @@
     </nav>
 
     <div class="container">
+      <% if @flash %> <div class="alert alert-info"><%= @flash %></div> <% end %>
       <%= yield %>
     </div>
 

@@ -35,6 +35,7 @@ end
 
 before do
   @access_token = session['access_token']
+  @flash = session.delete('flash')
 end
 
 get '/' do
@@ -99,10 +100,10 @@ post '/sepa_credit_transfers' do
     # replace commas and clean everything but numbers/dots and convert the amount to cents
     @transfer['amount'] = (@transfer['plain_amount'].gsub(/,/, '.').gsub(/[^0-9,.]/, '').to_f * 100.0).to_i
     # use HTTParty gem since ruby stdlib really sucks
-    response = HTTParty.post("#{settings.fidor_api_url}/sepa_credit_transfers",
-                      body: {sepa_credit_transfer: @transfer}.to_json,
-                      query: { access_token:session['access_token'] },
-                      headers: { 'Content-Type' => 'application/json'})
+    response = HTTParty.post( "#{settings.fidor_api_url}/sepa_credit_transfers",
+                              body: {sepa_credit_transfer: @transfer}.to_json,
+                              query: { access_token:session['access_token'] },
+                              headers: { 'Content-Type' => 'application/json'} )
 
     # check for success & handle errors
     if response.code != 200
@@ -118,18 +119,58 @@ post '/sepa_credit_transfers' do
   if @error
     erb :sepa_credit_transfers_new
   else
-    # return to list if success
+    session['flash'] = "Successfully send: #{@transfer['amount']/100.0}€ to IBAN #{@transfer['remote_iban']}"
     redirect '/sepa_credit_transfers'
   end
 
 end
 
 get '/internal_transfers/new' do
-  # show form
+  erb :internal_transfers_new
 end
 
 post '/internal_transfers' do
 
+  # find and use the first account. Could be done in GET new and added to a select-box
+  begin
+    accounts_url = "#{settings.fidor_api_url}/accounts?access_token=#{session['access_token']}"
+    res = JSON.parse( Net::HTTP.get URI(accounts_url))
+    account_id = res[0]['id']
+  rescue
+    @error = "Account could not be found. Try logging in again."
+  end
+  # check account locked, balance_available, overdraft against the given amount
+  # validate the data
+  unless @error
+    @transfer = params['transfer']
+    @transfer['account_id'] = account_id
+    # generate custom external_uid
+    @transfer['external_uid'] = SecureRandom.hex(10)
+    # replace commas and clean everything but numbers/dots and convert the amount to cents
+    @transfer['amount'] = (@transfer['plain_amount'].gsub(/,/, '.').gsub(/[^0-9,.]/, '').to_f * 100.0).to_i
+    # use HTTParty gem since ruby stdlib really sucks
+    response = HTTParty.post( "#{settings.fidor_api_url}/internal_transfers",
+                              body: {internal_transfer: @transfer}.to_json,
+                              query: { access_token:session['access_token'] },
+                              headers: { 'Content-Type' => 'application/json'} )
+
+    # check for success & handle errors
+    if response.code != 200
+      res = JSON.parse( response.body )
+      if res.is_a?(Hash) && res['error']
+        @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
+      else
+        @error = "Unexpected error with response code #{response.code}"
+      end
+    end
+  end
+
+  if @error
+    erb :internal_transfers_new
+  else
+    session['flash'] = "Successfully send: #{@transfer['amount']/100.0}€ to #{@transfer['receiver']}"
+    redirect '/internal_transfers'
+  end
 end
 
 

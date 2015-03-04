@@ -1,0 +1,21 @@
+<h2>Send money via Sepa Transfer</h2>
+<% if @error %>
+  <p class="alert alert-danger">
+    <%= @error%>
+  </p>
+<% end %>
+<form method="post" action="/internal_transfers" accept-charset="UTF-8">
+  <div class="form-group">
+    <label for="receiver">Receiver </label>
+    <input class="form-control" id="receiver" name="transfer[receiver]" placeholder="Enter receivers Fidor Account ID, Email or Twitter Name" value="<%= @transfer ? @transfer['receiver'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Amount in €</label>
+    <input class="form-control" id="amount" name="transfer[plain_amount]" placeholder="123,45" value="<%= @transfer ? @transfer['plain_amount'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="subject">Subject </label>
+    <textarea class="form-control" id="subject" name="transfer[subject]" placeholder="Your Subject with max 300 characters"><%= @transfer ? @transfer['subject'] : nil %></textarea>
+  </div>
+  <button type="submit" class="btn btn-default">Send the money</button>
+</form>

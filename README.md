@@ -1,7 +1,15 @@
 # Advanced Ruby Example using Sinatra
 
-This repo contains a step by step guide on how to develop an Fidor app.
-See the git log for the steps.
+This repo contains a step by step guide on how to develop an Fidor app using the
+sinatra micro-framework.
+
+See the git commit log for the steps. The code will improve and some odd looking
+parts are there to show common problems(and solutions to them) in API-Client
+Software.
+
+We used ruby for its readability. Non-Ruby developers are also welcome to read
+because the problems we face(API-client wise) are common, no matter matter what
+framework or language you are using.
 
 ## Dependencies
 
