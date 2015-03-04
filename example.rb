@@ -1,9 +1,10 @@
 require 'rubygems'
 require 'sinatra'
+require 'sinatra/reloader'
 require 'active_support/json'
 require 'net/http'
 require 'yaml'
-require 'haml'
+require 'erb'
 
 enable :sessions
 
@@ -12,8 +13,10 @@ configure do
   opts.each do |key, value|
     set key.to_sym, value
   end
-  set :views, 'views'
-  # set(:css_dir) { File.join(views, 'css') }
+end
+
+configure :development do
+  register Sinatra::Reloader
 end
 
 helpers do
@@ -34,10 +37,14 @@ before do
 end
 
 get '/' do
-  haml :index
+  erb :index
 end
 
 get '/transactions' do
+
+end
+
+get '/transfers' do
 
 end
 
@@ -56,20 +63,19 @@ end
 
 # 2. get the access token, with code returned from auth dialog above
 get '/oauth_callback' do
-  unless code = params["code"]
-    raise "Redirect from fidor does not have the code param"
-  end
-  state_param = params["state"]
+  raise "Redirect from fidor does not have the code param" unless params["code"]
+  raise "Redirect from fidor does not have the state param" unless params["state"]
+
   token_url = URI("#{settings.fidor_oauth_url}/token")
   # GET and parse access_token response json
   request = Net::HTTP.post_form(token_url, client_id: settings.client_id,
                                        redirect_uri: CGI::escape(settings.oauth_callback_url),
-                                       code: code,
+                                       code: params["code"],
                                        client_secret: settings.client_secret,
                                        grant_type: 'authorization_code')
   response = ActiveSupport::JSON.decode(request.body)
   # puts response.inspect
-  if response['state'] != state_param
+  if response['state'] != params["state"]
     raise "State param does not match request may be tempered"
   else
     session[:access_token] = response['access_token']
