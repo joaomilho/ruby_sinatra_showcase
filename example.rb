@@ -27,8 +27,10 @@ helpers do
   # get the current user information. Should also be persisted in session
   def current_user
     if logged_in?
-      usr_url = "#{settings.fidor_api_url}/users/current?access_token=#{session['access_token']}"
-      @user = JSON.parse( Net::HTTP.get URI(usr_url) )
+      @user ||= HTTParty.get( "#{settings.fidor_api_url}/users/current",
+                              headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
+    else
+      nil
     end
   end
 end
@@ -43,8 +45,8 @@ get '/' do
 end
 
 get '/transactions' do
-  url = "#{settings.fidor_api_url}/transactions?access_token=#{session['access_token']}"
-  res = JSON.parse( Net::HTTP.get URI(url))
+  res = HTTParty.get( "#{settings.fidor_api_url}/transactions",
+                      headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
   if res.is_a?(Hash) && res['error']
     @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
   else
@@ -54,8 +56,8 @@ get '/transactions' do
 end
 
 get '/sepa_credit_transfers' do
-  url = "#{settings.fidor_api_url}/sepa_credit_transfers?access_token=#{session['access_token']}"
-  res = JSON.parse( Net::HTTP.get URI(url))
+  res = HTTParty.get( "#{settings.fidor_api_url}/sepa_credit_transfers",
+                      headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
   if res.is_a?(Hash) && res['error']
     @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
   else
@@ -65,8 +67,8 @@ get '/sepa_credit_transfers' do
 end
 
 get '/internal_transfers' do
-  url = "#{settings.fidor_api_url}/internal_transfers?access_token=#{session['access_token']}"
-  res = JSON.parse( Net::HTTP.get URI(url))
+  res = HTTParty.get( "#{settings.fidor_api_url}/internal_transfers",
+                      headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
   if res.is_a?(Hash) && res['error']
     @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
   else
@@ -84,8 +86,8 @@ post '/sepa_credit_transfers' do
 
   # find and use the first account. Could be done in GET new and added to a select-box
   begin
-    accounts_url = "#{settings.fidor_api_url}/accounts?access_token=#{session['access_token']}"
-    res = JSON.parse( Net::HTTP.get URI(accounts_url))
+    res = HTTParty.get( "#{settings.fidor_api_url}/accounts",
+                          headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
     account_id = res[0]['id']
   rescue
     @error = "Account could not be found. Try logging in again."
@@ -102,8 +104,8 @@ post '/sepa_credit_transfers' do
     # use HTTParty gem since ruby stdlib really sucks
     response = HTTParty.post( "#{settings.fidor_api_url}/sepa_credit_transfers",
                               body: {sepa_credit_transfer: @transfer}.to_json,
-                              query: { access_token:session['access_token'] },
-                              headers: { 'Content-Type' => 'application/json'} )
+                              headers: { 'Content-Type' => 'application/json',
+                                         'Authorization' => "Bearer #{session['access_token']}"} )
 
     # check for success & handle errors
     if response.code != 200
@@ -133,15 +135,15 @@ post '/internal_transfers' do
 
   # find and use the first account. Could be done in GET new and added to a select-box
   begin
-    accounts_url = "#{settings.fidor_api_url}/accounts?access_token=#{session['access_token']}"
-    res = JSON.parse( Net::HTTP.get URI(accounts_url))
+    res = HTTParty.get( "#{settings.fidor_api_url}/accounts",
+                        headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
     account_id = res[0]['id']
   rescue
     @error = "Account could not be found. Try logging in again."
   end
   # check account locked, balance_available, overdraft against the given amount
   # validate the data
-  unless @error
+  unless @errors
     @transfer = params['transfer']
     @transfer['account_id'] = account_id
     # generate custom external_uid
@@ -151,8 +153,8 @@ post '/internal_transfers' do
     # use HTTParty gem since ruby stdlib really sucks
     response = HTTParty.post( "#{settings.fidor_api_url}/internal_transfers",
                               body: {internal_transfer: @transfer}.to_json,
-                              query: { access_token:session['access_token'] },
-                              headers: { 'Content-Type' => 'application/json'} )
+                              headers: { 'Content-Type' => 'application/json',
+                                         'Authorization' => "Bearer #{session['access_token']}"} )
 
     # check for success & handle errors
     if response.code != 200
