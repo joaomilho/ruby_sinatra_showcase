@@ -41,8 +41,8 @@ get '/' do
 end
 
 get '/transactions' do
-  txn_url = "#{settings.fidor_api_url}/transactions?access_token=#{session['access_token']}"
-  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(txn_url))
+  url = "#{settings.fidor_api_url}/transactions?access_token=#{session['access_token']}"
+  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(url))
   if res.is_a?(Hash) && res['error']
     @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
   else
@@ -51,8 +51,26 @@ get '/transactions' do
   erb :transactions
 end
 
-get '/transfers' do
+get '/sepa_credit_transfers' do
+  url = "#{settings.fidor_api_url}/sepa_credit_transfers?access_token=#{session['access_token']}"
+  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(url))
+  if res.is_a?(Hash) && res['error']
+    @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
+  else
+    @transfers = res
+  end
+  erb :sepa_credit_transfers
+end
 
+get '/internal_transfers' do
+  url = "#{settings.fidor_api_url}/internal_transfers?access_token=#{session['access_token']}"
+  res = ActiveSupport::JSON.decode( Net::HTTP.get URI(url))
+  if res.is_a?(Hash) && res['error']
+    @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
+  else
+    @transfers = res
+  end
+  erb :internal_transfers
 end
 
 get '/logout' do
