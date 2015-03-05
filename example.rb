@@ -10,7 +10,16 @@ require 'httparty'
 enable :sessions
 
 configure do
+  # load all files from /lib
+  $LOAD_PATH.unshift("#{File.dirname(__FILE__)}/lib")
+  Dir.glob("#{File.dirname(__FILE__)}/lib/*.rb") { |lib|
+    require File.basename(lib, '.*')
+  }
+  # Read the config
   opts = YAML.load_file( File.expand_path('../settings.yml', __FILE__))
+  # set base api url for all api request in the lib
+  Fidor::Resource.base_uri(opts['fidor_api_url'])
+  # Still need the settings for the oAuth login
   opts.each do |key, value|
     set key.to_sym, value
   end
@@ -45,35 +54,17 @@ get '/' do
 end
 
 get '/transactions' do
-  res = HTTParty.get( "#{settings.fidor_api_url}/transactions",
-                      headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
-  if res.is_a?(Hash) && res['error']
-    @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
-  else
-    @transactions = res
-  end
+  @transactions , @error = Fidor::Transaction.find_all(session['access_token'])
   erb :transactions
 end
 
 get '/sepa_credit_transfers' do
-  res = HTTParty.get( "#{settings.fidor_api_url}/sepa_credit_transfers",
-                      headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
-  if res.is_a?(Hash) && res['error']
-    @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
-  else
-    @transfers = res
-  end
+  @transfers, @error = Fidor::SepaCreditTransfer.find_all(session['access_token'])
   erb :sepa_credit_transfers
 end
 
 get '/internal_transfers' do
-  res = HTTParty.get( "#{settings.fidor_api_url}/internal_transfers",
-                      headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
-  if res.is_a?(Hash) && res['error']
-    @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
-  else
-    @transfers = res
-  end
+  @transfers, @error = Fidor::InternalTransfer.find_all(session['access_token'])
   erb :internal_transfers
 end
 
