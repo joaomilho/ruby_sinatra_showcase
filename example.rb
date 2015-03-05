@@ -60,13 +60,74 @@ end
 
 get '/sepa_credit_transfers' do
   @filter = params['filter'] || {}
-  @transfers, @error = Fidor::SepaCreditTransfer.find_all(session['access_token'],filter: @filter)
+  @transfers, @error = Fidor::SepaCreditTransfer.find_all( session['access_token'],
+                                                           filter: @filter )
   erb :sepa_credit_transfers
 end
 
 get '/internal_transfers' do
   @transfers, @error = Fidor::InternalTransfer.find_all(session['access_token'])
   erb :internal_transfers
+end
+
+get '/sepa_mandates' do
+  @filter = params['filter'] || {}
+  @mandates, @error = Fidor::SepaMandate.find_all( session['access_token'],
+                                                    filter: @filter )
+  erb :sepa_mandates
+end
+
+# show form
+get '/sepa_mandates/new' do
+  erb :sepa_mandates_new
+end
+
+post '/sepa_mandates' do
+
+  # find and use the first customer. Could be done in GET /new and added to a select-box
+  begin
+    res = HTTParty.get( "#{settings.fidor_api_url}/customers",
+                          headers: { 'Authorization' => "Bearer #{session['access_token']}"} )
+    customer_id = res[0]['id']
+  rescue
+    @error = "Customer could not be found. Try logging in again."
+  end
+  # check account locked, balance_available, overdraft against the given amount
+  # validate the data
+  unless @error
+    @mandate = params['mandate']
+    @mandate['customer_id'] = customer_id
+    # generate custom external_uid
+    @mandate['external_uid'] = SecureRandom.hex(10)
+    # random Mandate reference, needed for withdrawals later
+    @mandate['mandate_reference'] = SecureRandom.hex(15)
+    # set the valid_from_date to signature date
+    @mandate['valid_from_date'] = @mandate['signature_date']
+    # lets make it a recurring mandate
+    @mandate['sequence'] = 'RCUR'
+
+    response = HTTParty.post( "#{settings.fidor_api_url}/sepa_mandates",
+                              body: {sepa_mandate: @mandate}.to_json,
+                              headers: { 'Content-Type' => 'application/json',
+                                         'Authorization' => "Bearer #{session['access_token']}"} )
+
+    # check for success & handle errors
+    if response.code != 200
+      res = JSON.parse( response.body )
+      if res.is_a?(Hash) && res['error']
+        @error = "Error Code #{res['error']['code']}: #{res['error']['message']}"
+      else
+        @error = "Unexpected error with response code #{response.code}"
+      end
+    end
+  end
+
+  if @error
+    erb :sepa_mandates_new
+  else
+    session['flash'] = "Successfully created Mandate for: #{@mandate['remote_name']}."
+    redirect '/sepa_mandates'
+  end
 end
 
 # show form

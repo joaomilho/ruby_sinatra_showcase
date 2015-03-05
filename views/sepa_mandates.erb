@@ -1,0 +1,52 @@
+<% if @error %>
+  <div class="alert alert-danger">
+    <%= @error%>
+  </div>
+<% else %>
+  <form accept-charset="UTF-8" action="../sepa_mandates" class="well form-horizontal" method="get">
+    <div class="control-group">
+      <label class="control-label">IBAN</label>
+      <div class="controls">
+        <input class="form-control" name="filter[remote_ibans]" placeholder="DEXYZ,DE1234" value="<%= @filter ? @filter['remote_ibans'] : nil %>" >
+      </div>
+    </div>
+    <div class="control-group">
+      <label class="control-label">Mandate Reference</label>
+      <input class="form-control" name="filter[mandate_references]" placeholder="ref1,ref2" value="<%= @filter ? @filter['mandate_references'] : nil %>" >
+      <button type="submit" class="btn btn-default">Search</button>
+    </div>
+  </form>
+  <table class="table">
+    <thead>
+      <th>ID</th>
+      <th>Mandate Ref</th>
+      <th>Sender</th>
+      <th>IBAN / BIC</th>
+      <th>Valid From</th>
+      <th>Created at</th>
+    </thead>
+    <tbody>
+      <% @mandates.each do |t| %>
+      <tr>
+        <td><%=t['id'] %></td>
+        <td><%=t['mandate_reference'] %></td>
+        <td>
+          <%=t['remote_title'] %> <%=t['remote_name'] %>
+          <br>
+          <%=t['remote_address_line1'] %>
+          <br>
+          <%=t['remote_address_line2'] %> <%=t['remote_country'] %>
+        </td>
+        <td><%=t['remote_iban'] %>< / <%=t['remote_bic'] %></td>
+        <td>
+          <%=t['remote_name'] %>
+          <br/>
+          <%=t['remote_iban'] %>
+        </td>
+        <td><%=t['valid_from_date'] %></td>
+        <td><%=t['created_at'] %></td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+<% end %>

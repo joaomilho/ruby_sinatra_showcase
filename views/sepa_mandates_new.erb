@@ -1,0 +1,46 @@
+<h2>Create a new SEPA Mandate</h2>
+<% if @error %>
+  <p class="alert alert-danger">
+    <%= @error%>
+  </p>
+<% end %>
+<form method="post" action="/sepa_mandates" accept-charset="UTF-8">
+
+  <div class="form-group">
+    <label for="receiver">Remote Iban </label>
+    <input class="form-control" id="receiver" name="mandate[remote_iban]" placeholder="IBAN of the sending account" value="<%= @mandate ? @mandate['remote_iban'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="receiver">Remote BIC</label>
+    <input class="form-control" name="mandate[remote_bic]" placeholder="BIC of the sending account" value="<%= @mandate ? @mandate['remote_bic'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Remote Title</label>
+    <input class="form-control" name="mandate[remote_title]" placeholder="Mr., Herr, Frau, Dr." value="<%= @mandate ? @mandate['remote_title'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Remote Name</label>
+    <input class="form-control" name="mandate[remote_name]" placeholder="Peter Meier" value="<%= @mandate ? @mandate['remote_name'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Remote Email</label>
+    <input class="form-control" name="mandate[remote_email]" placeholder="peter@example.com" value="<%= @mandate ? @mandate['remote_email'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Remote Street & Number</label>
+    <input class="form-control" name="mandate[remote_address_line1]" placeholder="Failstr. 69" value="<%= @mandate ? @mandate['remote_address_line1'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Zip & City</label>
+    <input class="form-control" name="mandate[remote_address_line2]" placeholder="50733 Köln" value="<%= @mandate ? @mandate['remote_address_line2'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Country</label>
+    <input class="form-control" name="mandate[remote_country]" placeholder="DE" value="<%= @mandate ? @mandate['remote_country'] : nil %>" >
+  </div>
+  <div class="form-group">
+    <label for="amount">Signature date</label>
+    <input class="form-control" name="mandate[signature_date]" placeholder="YYYY-MM-DD" value="<%= @mandate ? @mandate['signature_date'] : nil %>" >
+  </div>
+  <button type="submit" class="btn btn-default">Save the mandate</button>
+</form>
