@@ -59,7 +59,8 @@ get '/transactions' do
 end
 
 get '/sepa_credit_transfers' do
-  @transfers, @error = Fidor::SepaCreditTransfer.find_all(session['access_token'])
+  @filter = params['filter'] || {}
+  @transfers, @error = Fidor::SepaCreditTransfer.find_all(session['access_token'],filter: @filter)
   erb :sepa_credit_transfers
 end
 
