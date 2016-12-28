@@ -1,17 +1,17 @@
 # Advanced Ruby Example using Sinatra
 
-This repo contains a step by step guide on how to develop an Fidor app using the
+This repo contains a step by step guide on how to develop a Fidor app using the
 sinatra micro-framework.
 
 See the git commit log for the steps. The code will improve and some odd looking
 parts are there to show common problems(and solutions to them) in API-Client
 Software. We did not use a bunch of magic helper libraries from the very start,
 to show the road you will have to go. The decision whether to use external libs
-or building own ones is up to you. We'll leave lots of room for improvements in
+or building your own ones is up to you. We'll leave lots of room for improvements in
 here.
 
 Non-Ruby developers are also welcome to read because the problems we face
-(API-client wise) are common, no matter matter what framework or language you
+(API-client wise) are common, no matter what framework or language you
 are using. Ruby is really readable, so give it a try.
 
 ## Dependencies
@@ -22,15 +22,19 @@ are using. Ruby is really readable, so give it a try.
 
 Create and edit the settings
 
-  cp settings.yml.default settings.yml
+```sh
+cp settings.yml.default settings.yml
+```
 
 Install required gems and run
 
-  bundle install
-  ruby example.rb
+```sh
+bundle install
+bundle exec ruby example.rb
 
-  # or run on different port than :4567 provided by WEBrick
-  ruby example.rb -p 3004
+# or run on different port than :4567 provided by WEBrick
+bundle exec ruby example.rb -p 3004
+```
 
 ## Configuration
 
